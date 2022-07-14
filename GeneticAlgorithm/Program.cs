@@ -10,6 +10,7 @@ using Utils;
 
 const int popSize = 100;
 const int maxIterations = 1000;
+
 //const string pathPrefix = "Files/dataset";
 //const string pathSuffix = "";
 //var availableDataSetFiles = new List<(double dataSetSize, double? expectedResult)>()
@@ -21,6 +22,7 @@ const int maxIterations = 1000;
 //    (25, null), 
 //    (30, null)
 //};
+
 const string pathPrefix = "Files/n_";
 const string pathSuffix = "_c_10000000000_g_14_f_0.1_eps_0.1_s_200.in";
 var availableDataSetFiles = new List<(double dataSetSize, double? expectedResult)>()
@@ -149,6 +151,10 @@ TimeSpan RunGeneticForDataSet(string path, double? expectedResult)
     foreach(var itemWithIndex in itemsInBestSack)
         Console.WriteLine($" => Label: {itemWithIndex.item.Label} - Price: {itemWithIndex.item.Price} - Weight: {itemWithIndex.item.Weight}");
     Console.WriteLine($"Weight of best sack: {itemsInBestSack.Sum(x => x.item.Weight)}");
+    Console.WriteLine($"-> DataSet Name: {path}");
+    if(expectedResult.HasValue)
+        Console.Write($"   -- Efficiency: {bestIndividual.Value / expectedResult.Value} --");
+    Console.ResetColor();
     Console.WriteLine($"Execution Elapsed Time: {stopwatch.Elapsed.TotalSeconds} seconds");
     Console.WriteLine("");
     Console.ForegroundColor = ConsoleColor.DarkBlue;

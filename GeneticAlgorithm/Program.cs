@@ -1,73 +1,53 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using System.Diagnostics;
-using System.Text.Json;
 using GeneticAlgorithm;
 using GeneticAlgorithm.Models;
 using ScottPlot;
 using Utils;
 
-Console.WriteLine("Execution Started");
+const int popSize = 100;
+const int maxIterations = 1000;
+const string filePath = "Files/n_1200_c_10000000000_g_14_f_0.1_eps_0.1_s_200.in";
 
-const int popSize = 1000;
+Console.WriteLine("===== Execution Started =====");
+Console.WriteLine();
 
-const int knapsackMaxWeight = 10;
+var (items, knapsackMaxWeight) = KnapsackDataReader.GetKnapsackData(filePath);
+var knapsackItems = items.OrderBy(x => x.PriceToWeightRatio)
+                         .Select((x, i) => (index: i, item: x))
+                         .ToDictionary(x => x.index, x => x.item);
 
-
-var knapsackData = KnapsackDataReader.GetKnapsackData("Files/test-set1.txt");
-var knapsackItems = knapsackData.items
-                                .OrderBy(x => x.PriceToWeightRatio)
-                                .Select((x, i) => (index: i, item: x))
-                                .ToDictionary(x => x.index, x => x.item);
 if(knapsackItems is null)
     throw new($"Error, '{nameof(knapsackItems)}' cannot be null");
 
-foreach(var knapsackItem in knapsackItems)
-    Console.WriteLine(JsonSerializer.Serialize(knapsackItem.Value));
+var availableItemsQty = knapsackItems.Count;
 
-IEnumerable<(int index, KnapsackItem item)> GetSackItems(Individual ind) =>
-    ind.Chromosome
-       .Select((inSack, i) => ((bool)inSack) ? (index: i, item: knapsackItems![i + 1]) : default);
-
-void ApplyWeightRestriction(Individual ind)
-{
-    var weights = GetSackItems(ind)
-                  .Where(x => x != default)
-                  .AsList()!;
-    var totalWeight = weights.Sum(x => x.item.Weight);
-
-    if(totalWeight > knapsackMaxWeight)
+var initialPop = Population.GenerateInitialPopulation(
+    popSize,
+    new() { ChromosomeSize = knapsackItems.Count },
+    (_, configuration) =>
     {
-        var extraWeight = totalWeight - knapsackMaxWeight;
-        var removedWeight = 0.0;
-        var toRemoveItems = weights.TakeWhile(x =>
-        {
-            var decision = extraWeight > removedWeight;
-            removedWeight += x.item.Weight;
-            return decision;
-        });
+        var random = new Random();
+        var randomChromosome = Enumerable.Range(0, configuration.ChromosomeSize)
+                                    .Select(x => (object)(random.NextDouble() < 0.3))
+                                    .ToList();
+        var newInd = new Individual() { Chromosome = randomChromosome };
 
-        foreach(var toRemoveItem in toRemoveItems)
-            ind.Chromosome[toRemoveItem.index] = false;
-    }
-}
+        ApplyWeightRestriction(newInd);
 
-var individuals = Population.GenerateInitialPopulation(popSize, new()
+        return newInd;
+    });
+
+
+var genetic = new GeneticAlgorithm.GeneticAlgorithm(initialPop)
 {
-    ChromosomeSize = knapsackItems.Count,
-    // TODO: Generate initial population
-    //GenerateRandomValue = 
-});
-
-
-var genetic = new GeneticAlgorithm.GeneticAlgorithm(individuals)
-{
-    EvaluationFunc = (x) => x.Chromosome.Select((inSack, i) => ((bool)inSack) ? knapsackItems[i + 1].Price : 0).Sum(),
+    MutationRate = 0.2,
+    ElitismQty = 1,
+    EvaluationFunc = (x) => GetSackItems(x).Sum(chrom => chrom.item.Price),
     CrossOverFunc = (parent1, parent2) =>
     {
         var rnd = new Random();
-        var mask = Enumerable.Range(0, parent1.Chromosome.Count).Select(_ => rnd.Next(0, 1));
-
         var childs = parent1.Chromosome.Zip(parent2.Chromosome, (p1, p2) => rnd.NextDouble() < 0.5
                                                                                 ? (p1, p2)
                                                                                 : (p2, p1)
@@ -80,37 +60,73 @@ var genetic = new GeneticAlgorithm.GeneticAlgorithm(individuals)
         ApplyWeightRestriction(child2);
 
         return (child1, child2);
+    },
+    MutationFunc = (individual) =>
+    {
+        var rnd = new Random();
+        individual.Chromosome = individual.Chromosome
+                                          .Select((x, i) => rnd.NextDouble() < (i + 1) / (availableItemsQty * 100.0) ? !(bool)x : x)
+                                          .ToList();
+        ApplyWeightRestriction(individual);
+        return individual;
     }
 };
 
+var plotXValues = new List<double>();
+var plotYValues = new List<double>();
 
-var bestFound = false;
-
-for(var i = 0; i < 1000; i++)
+var timeWatch = new Stopwatch();
+timeWatch.Start();
+for(var i = 0; i < maxIterations; i++)
 {
-    bestFound = genetic.GenerateNewPopulation();
+    genetic.GenerateNewPopulation();
 
-    if(new List<int> { 10, 100, 200, 500, 1000, 10000 }.Contains(i + 1))
+    plotXValues.Add(i + 1);
+    plotYValues.Add(genetic.ProcessedIndividuals.First().Value);
+}
+timeWatch.Stop();
+
+var plt = new ScottPlot.Plot(1600, 900);
+plt.AddScatter(plotXValues.ToArray(), plotYValues.ToArray(), lineStyle: LineStyle.None, label: "Best Individual per iteration");
+plt.SaveFig($"../../../../Images/{filePath.Split("/").Last()}-ValueProgression.png");
+
+var bestIndividual = genetic.ProcessedIndividuals.First();
+Console.WriteLine($"Best Value found was: {bestIndividual.Value}");
+var itemsInBestSack = GetSackItems(bestIndividual.Individual).OrderBy(x => Convert.ToInt32(x.item.Label)).AsList()!;
+foreach(var itemWithIndex in itemsInBestSack)
+    Console.WriteLine($" => Label: {itemWithIndex.item.Label} - Price: {itemWithIndex.item.Price} - Weight: {itemWithIndex.item.Weight}");
+Console.WriteLine($"Weight of best sack: {itemsInBestSack.Sum(x => x.item.Weight)}");
+Console.WriteLine($"Execution Elapsed Time: {timeWatch.Elapsed.TotalSeconds} seconds");
+
+Console.WriteLine();
+Console.WriteLine("===== Execution Ended =====");
+
+// ======================================
+
+IEnumerable<(int index, KnapsackItem item)> GetSackItems(Individual ind) =>
+    ind.Chromosome
+       .Select((inSack, i) => ((bool)inSack) ? (index: i, item: knapsackItems![i]) : default)
+       .Where(x => x != default);
+
+void ApplyWeightRestriction(Individual ind)
+{
+    var weights = GetSackItems(ind)
+                  .Where(x => x != default)
+                  .AsList()!;
+    var totalWeight = weights.Sum(x => x.item.Weight);
+
+    if(totalWeight <= knapsackMaxWeight)
+        return;
+
+    var extraWeight = totalWeight - knapsackMaxWeight;
+    var removedWeight = 0.0;
+    var toRemoveItems = weights.TakeWhile(x =>
     {
-        var dataX = genetic.Individuals.Select(x => x.Chromosome[0]).ToArray();
-        var dataY = genetic.Individuals.Select(x => x.Chromosome[1]).ToArray();
-        var plt = new ScottPlot.Plot(400, 300);
-        plt.AddScatter(dataX, dataY, lineStyle: LineStyle.None);
-        plt.SaveFig($"../../../../Images/Iteration-{i + 1}.png");
-    }
+        var decision = extraWeight > removedWeight;
+        removedWeight += x.item.Weight;
+        return decision;
+    });
 
-    if(bestFound)
-        break;
-}
-
-if(bestFound)
-{
-    Console.WriteLine($"Result Found: {genetic.CalcIndividual(genetic.Best)}");
-    Console.WriteLine($"X Values=> X[0]: {genetic.Best.Chromosome[0]} - X[1]:{genetic.Best.Chromosome[1]}");
-}
-else
-{
-    Console.WriteLine($"Result Found: {genetic.CalcIndividual(genetic.Best)}");
-    Console.WriteLine($"X Values=> X[0]: {genetic.Best.Chromosome[0]} - X[1]:{genetic.Best.Chromosome[1]}");
-    Console.WriteLine($"Result was not within {errorRange} margin of error");
+    foreach(var toRemoveItem in toRemoveItems)
+        ind.Chromosome[toRemoveItem.index] = false;
 }

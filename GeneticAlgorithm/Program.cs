@@ -10,20 +10,41 @@ using Utils;
 
 const int popSize = 100;
 const int maxIterations = 1000;
-const string pathPrefix = "Files/dataset";
+//const string pathPrefix = "Files/dataset";
+//const string pathSuffix = "";
+//var availableDataSetFiles = new List<(double dataSetSize, double? expectedResult)>()
+//{
+//    (5, null), 
+//    (10, null), 
+//    (15, null),
+//    (20, null),
+//    (25, null), 
+//    (30, null)
+//};
+const string pathPrefix = "Files/n_";
+const string pathSuffix = "_c_10000000000_g_14_f_0.1_eps_0.1_s_200.in";
+var availableDataSetFiles = new List<(double dataSetSize, double? expectedResult)>()
+{
+    (400, 9999762461),
+    (600, 9999764493),
+    (800, 9999766510),
+    (1000, 9999767602),
+    (1200, 9999769919)
+};
 
-var availableDataSetFiles = new List<double>() { 5, 10, 15, 20, 25, 30 };
 
 Console.WriteLine("===== Execution Started =====");
 Console.WriteLine();
 
 var plotYValues = availableDataSetFiles
-                  .Select(availableDataSet => RunGeneticForDataSet($"{pathPrefix}{availableDataSet}").TotalSeconds)
+                  .Select(availableDataSet => RunGeneticForDataSet($"{pathPrefix}{availableDataSet.dataSetSize}{pathSuffix}",
+                                                                   availableDataSet.expectedResult).TotalSeconds
+                          )
                   .ToList();
 
 var plt = new ScottPlot.Plot(1600, 900);
 plt.Title("Genetic Execution Time (Seconds)");
-plt.AddScatter(availableDataSetFiles.ToArray(), plotYValues.ToArray(), lineStyle: LineStyle.DashDotDot, label: "Genetic Execution Time (Seconds)");
+plt.AddScatter(availableDataSetFiles.Select(x => x.dataSetSize).ToArray(), plotYValues.ToArray(), lineStyle: LineStyle.DashDotDot, label: "Genetic Execution Time (Seconds)");
 plt.SaveFig("../../../../Images/Genetic/GeneticExecutionTime.png");
 
 Console.WriteLine();
@@ -31,7 +52,7 @@ Console.WriteLine("===== Execution Ended =====");
 
 // ====================================================
 
-TimeSpan RunGeneticForDataSet(string path)
+TimeSpan RunGeneticForDataSet(string path, double? expectedResult)
 {
     /** ===========================================
      *  Reading data from File
@@ -117,6 +138,11 @@ TimeSpan RunGeneticForDataSet(string path)
 
     var bestIndividual = genetic.ProcessedIndividuals.First();
 
+    Console.ForegroundColor = ConsoleColor.DarkRed;
+    Console.WriteLine($"-> DataSet Name: {path}");
+    if(expectedResult.HasValue)
+        Console.Write($"   -- ExpectedResult: {expectedResult.Value} --");
+    Console.ResetColor();
     Console.WriteLine("");
     Console.WriteLine($"Best Value found was: {bestIndividual.Value}");
     var itemsInBestSack = GetSackItems(bestIndividual.Individual).OrderBy(x => Convert.ToInt32(x.item.Label)).AsList()!;

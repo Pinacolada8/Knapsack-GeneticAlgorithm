@@ -31,10 +31,22 @@
     <None Update="Files\dataset5">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Files\n_1000_c_10000000000_g_14_f_0.1_eps_0.1_s_200.in">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Files\n_1000_c_10000000000_g_14_f_0.3_eps_0.01_s_300.in">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Files\n_1200_c_10000000000_g_14_f_0.1_eps_0.1_s_200.in">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Files\n_400_c_10000000000_g_14_f_0.1_eps_0.1_s_200.in">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Files\n_600_c_10000000000_g_14_f_0.1_eps_0.1_s_200.in">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Files\n_800_c_10000000000_g_14_f_0.1_eps_0.1_s_200.in">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Files\test-set1.txt">

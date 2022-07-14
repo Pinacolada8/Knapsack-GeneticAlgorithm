@@ -8,6 +8,7 @@ using Utils;
 // ReSharper disable InvalidXmlDocComment
 
 const string pathPrefix = "Files/dataset";
+const string pathSuffix = "";
 
 var availableDataSetFiles = new List<double>() { 5, 10, 15, 20, 25, 30 };
 
@@ -95,6 +96,8 @@ TimeSpan RunBruteForceForDataSet(string path)
         throw new($"Error, '{nameof(items)}' cannot be null");
 
     /** =========================================== */
-
+    Console.ForegroundColor = ConsoleColor.DarkRed;
+    Console.WriteLine($"-> DataSet Name: {path}");
+    Console.ResetColor();
     return BruteForceKnapsack(items, knapsackMaxWeight);
 }

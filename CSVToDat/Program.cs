@@ -4,7 +4,7 @@ using System.Text;
 using GeneticAlgorithm;
 
 
-var path = $"Files/dataset400";
+var path = $"Files/dataset180";
 
 var (items, knapsackMaxWeight) = KnapsackDataReader.GetKnapsackData(path);
 var itemsList = items.ToList();

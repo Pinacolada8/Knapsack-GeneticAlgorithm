@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="ASCII"?><project>
+    	
+    <version>1.0</version>
+    	
+    <configs>
+        		
+        <config default="true" name="Configura&amp;#231;&amp;#227;o1" category="opl">
+            			
+            <ref name="KnapsackProblem.mod" type="model">
+			</ref>
+            			
+            <ref name="CSVReader.dat" type="data">
+			</ref>
+            		
+        </config>
+        		
+        <config default="false" name="cf2" category="opl">
+            			
+            <ref name="KnapsackProblem.mod" type="model">
+			</ref>
+            			
+            <ref name="CSVReader.dat" type="data">
+			</ref>
+            		
+        </config>
+        	
+    </configs>
+    	
+
+</project>
